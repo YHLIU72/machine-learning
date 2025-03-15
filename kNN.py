@@ -5,10 +5,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import matplotlib.lines as mlines
+from os import listdir
 #解决中文乱码问题
 myfont = fm.FontProperties(fname='C:\Windows\Fonts\simhei.ttf',size=14)
 
-#创建数据集和标签
+#创建示例数据集和标签，用于测试
 def createDataSet():
     group = np.array([[1.0,1.1],[1.0,1.0],[0,0],[0,0.1]])
     labels = ['A','A','B','B']
@@ -54,6 +55,9 @@ with open('example.txt', 'w', encoding='utf-8') as file:
 # 打开文件并追加内容
 with open('example.txt', 'a', encoding='utf-8') as file:
     file.write("这是追加的内容。\n")"""
+
+#海伦约会项目
+#约会网站数据处理
 def file2matrix(filename):
     pth = '../data/'
     filename = pth + filename
@@ -121,7 +125,7 @@ edgecolors:
 可选参数，表示点的边缘颜色。
 默认值为 None，使用与点相同的颜色"""
 
-
+#数据可视化
 def showData(datingDataMat,datingLabels):
     fig,axs = plt.subplots(nrows=2,ncols=2,sharex=False,sharey=False,figsize=(10,10))
     LabelsColors = []
@@ -170,6 +174,7 @@ def showData(datingDataMat,datingLabels):
     plt.legend(['不喜欢','魅力一般','极具魅力'],loc='upper left',prop=myfont)
     # 显示图形
     plt.show()
+
 #归一化特征值
 def autoNorm(dataSet):
     #获取数据集列中的最小值和最大值
@@ -212,6 +217,132 @@ def classifyperson():
     classifierResult = classify0((inArr-minVals)/ranges,normMat,datingLabels,3)
     print("You will probably like this person: ",resultList[classifierResult - 1])
 
+#手写数字识别系统
+#将图像转换为向量
+def img2vector(filename):
+    returnVect = np.zeros((1,1024))
+    with open(filename) as fr:
+        for i in range(32):
+            lineStr = fr.readline()
+            for j in range(32):
+                returnVect[0,32*i+j] = int(lineStr[j])
+    return returnVect
+#手写数字识别系统测试
+def handwritingClassTest():
+    hwLabels = []
+    trainingFileList = listdir('../data/trainingDigits')
+    m = len(trainingFileList)
+    trainingMat = np.zeros((m,1024))
+    for i in range(m):
+        fileNameStr = trainingFileList[i]
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])
+        hwLabels.append(classNumStr)
+        trainingMat[i,:] = img2vector('../data/trainingDigits/%s' % fileNameStr)
+    testFileList = listdir('../data/testDigits')
+    errorCount = 0.0
+    mTest = len(testFileList)
+    for i in range(mTest):
+        fileNameStr = testFileList[i]
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])
+        vectorUnderTest = img2vector('../data/testDigits/%s' % fileNameStr)
+        classifierResult = classify0(vectorUnderTest,trainingMat,hwLabels,3)
+        print("the classifier came back with: %d,the real answer is: %d" % (classifierResult,classNumStr))
+        if(classifierResult!= classNumStr):
+            errorCount += 1.0
+    print("\nthe total number of errors is: %d" % errorCount)
+    print("\nthe total error rate is: %f" % (errorCount/float(mTest)))
+
+#调用scikit-learn库实现kNN算法
+"""KNeighborsClassifier(n_neighbors=3) 是 scikit-learn 库中用于实现 k 近邻（k-Nearest Neighbors, kNN）算法的分类器。以下是它的详细参数和用法：
+
+主要参数
+
+n_neighbors（默认值为 5）：
+表示 k 值，即选择多少个最近邻居。
+较小的 k 值会使模型对噪声更敏感，较大的 k 值会使模型更平滑，但可能忽略局部特征。
+
+weights（默认值为 'uniform'）：
+表示邻居的权重计算方式。
+'uniform'：所有邻居的权重相同。
+'distance'：邻居的权重与距离成反比，距离越近的邻居权重越大。
+也可以传入自定义的权重函数。
+
+algorithm（默认值为 'auto'）：
+表示用于计算最近邻居的算法。
+'auto'：自动选择最佳算法。
+'ball_tree'：使用 BallTree 数据结构。
+'kd_tree'：使用 KDTree 数据结构。
+'brute'：使用暴力搜索。
+
+metric（默认值为 'minkowski'）：
+表示距离度量方法。
+'minkowski'：闵可夫斯基距离（默认 p=2，即欧氏距离）。
+其他选项包括 'euclidean'（欧氏距离）、'manhattan'（曼哈顿距离）等。
+
+p（默认值为 2）：
+当 metric='minkowski' 时，表示闵可夫斯基距离的幂参数。
+p=1：曼哈顿距离。
+p=2：欧氏距离。
+
+leaf_size（默认值为 30）：
+当使用 'ball_tree' 或 'kd_tree' 时，表示叶子节点的大小。
+影响树的构建和查询速度。
+
+n_jobs（默认值为 None）：
+表示并行计算时使用的 CPU 核心数。
+None：使用单核。
+-1：使用所有可用核心。
+
+主要方法
+fit(X, y)：
+训练模型。
+X：训练数据，形状为 (n_samples, n_features) 的数组。
+y：标签，形状为 (n_samples,) 的数组。
+
+predict(X)：
+对测试数据进行分类。
+返回预测的类别，形状为 (n_samples,) 的数组。
+
+predict_proba(X)：
+返回测试数据属于每个类别的概率。
+形状为 (n_samples, n_classes) 的数组。
+
+score(X, y)：
+返回模型在测试数据上的准确率。"""
+
+from sklearn.neighbors import KNeighborsClassifier
+def sk_learn_kNN():
+    #创建分类器
+    knn = KNeighborsClassifier(n_neighbors=3,algorithm='auto')
+    hwLabels = []
+    trainingFileList = listdir('../data/trainingDigits')
+    m = len(trainingFileList)
+    trainingMat = np.zeros((m,1024))
+    for i in range(m):
+        fileNameStr = trainingFileList[i]
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])
+        hwLabels.append(classNumStr)
+        trainingMat[i,:] = img2vector('../data/trainingDigits/%s' % fileNameStr)
+    testFileList = listdir('../data/testDigits')
+    errorCount = 0.0
+    mTest = len(testFileList)
+    for i in range(mTest):
+        fileNameStr = testFileList[i]
+        fileStr = fileNameStr.split('.')[0]
+        classNumStr = int(fileStr.split('_')[0])
+        vectorUnderTest = img2vector('../data/testDigits/%s' % fileNameStr)
+        knn.fit(trainingMat,hwLabels)
+        classifierResult = knn.predict(vectorUnderTest)
+        print("the classifier came back with: %d,the real answer is: %d" % (classifierResult,classNumStr))
+        if(classifierResult!= classNumStr):
+            errorCount += 1.0
+    print("\nthe total number of errors is: %d" % errorCount)
+    print("\nthe total error rate is: %f" % (errorCount/float(mTest)))
+
+
 
 if __name__ == '__main__':
 
@@ -229,6 +360,8 @@ if __name__ == '__main__':
     # #测试showData
     # showData(datingDataMat,datingLabels)
 
-    # datingClassTest()
-    classifyperson()
+    # # datingClassTest()
+    # classifyperson()
+
+    sk_learn_kNN()
 
