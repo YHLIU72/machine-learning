@@ -293,3 +293,27 @@ def createPlot(inTree):
     plotTree.yOff = 1.0  # 初始化 y 偏移量
     plotTree(inTree, (0.5, 1.0), '')  # 调用 plotTree 函数绘制决策树
     plt.show()  # 显示图形
+
+#创建分类器
+def classify(inputTree, featLabels, testVec):
+    """
+    使用决策树进行分类。
+
+    参数:
+    - inputTree: 已经生成的决策树（字典结构）。
+    - featLabels: 决策树的特征标签列表。
+    - testVec: 测试数据，即待分类的特征向量。
+
+    返回值:
+    - classLabel: 分类结果。
+    """
+    firstStr = list(inputTree.keys())[0]  # 获取决策树的第一个键（即根节点）
+    secondDict = inputTree[firstStr]  # 获取根节点的子节点字典
+    featIndex = featLabels.index(firstStr)  # 获取根节点特征在特征标签列表中的索引
+    for key in secondDict.keys():  # 遍历子节点字典的键
+        if testVec[featIndex] == key:  # 如果测试数据的特征值等于当前子节点的键
+            if type(secondDict[key]).__name__ == 'dict':  # 如果子节点仍然是字典（即非叶子节点）
+                classLabel = classify(secondDict[key], featLabels, testVec)  # 递归分类
+            else:  # 如果子节点不是字典（即叶子节点）
+                classLabel = secondDict[key]  # 分类结果为当前子节点的值
+    return classLabel  # 返回分类结果
